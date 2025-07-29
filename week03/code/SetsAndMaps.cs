@@ -21,8 +21,34 @@ public static class SetsAndMaps
     /// <param name="words">An array of 2-character words (lowercase, no duplicates)</param>
     public static string[] FindPairs(string[] words)
     {
-        // TODO Problem 1 - ADD YOUR CODE HERE
-        return [];
+        var wordSet = new HashSet<string>();
+        var pairs = new List<string>();
+        var processed = new HashSet<string>();
+
+        foreach (string word in words)
+        {
+            // Skip words where both characters are the same
+            if (word.Length == 2 && word[0] == word[1])
+            {
+                wordSet.Add(word);
+                continue;
+            }
+
+            // Create the reverse of the current word
+            string reverse = $"{word[1]}{word[0]}";
+
+            // Check if the reverse exists in our set and we haven't processed this pair yet
+            if (wordSet.Contains(reverse) && !processed.Contains(word))
+            {
+                pairs.Add($"{reverse} & {word}");
+                processed.Add(word);
+                processed.Add(reverse);
+            }
+
+            wordSet.Add(word);
+        }
+
+        return pairs.ToArray();
     }
 
     /// <summary>
@@ -41,8 +67,12 @@ public static class SetsAndMaps
         var degrees = new Dictionary<string, int>();
         foreach (var line in File.ReadLines(filename))
         {
-            var fields = line.Split(",");
-            // TODO Problem 2 - ADD YOUR CODE HERE
+            var fields = line.Split(',');
+            if (fields.Length > 3)
+            {
+                string degree = fields[3].Trim();
+                degrees[degree] = degrees.GetValueOrDefault(degree, 0) + 1;
+            }
         }
 
         return degrees;
@@ -66,8 +96,35 @@ public static class SetsAndMaps
     /// </summary>
     public static bool IsAnagram(string word1, string word2)
     {
-        // TODO Problem 3 - ADD YOUR CODE HERE
-        return false;
+        // Normalize both words: remove spaces and convert to lowercase
+        string normalizedWord1 = word1.Replace(" ", "").ToLower();
+        string normalizedWord2 = word2.Replace(" ", "").ToLower();
+
+        // If lengths are different, they can't be anagrams
+        if (normalizedWord1.Length != normalizedWord2.Length)
+        {
+            return false;
+        }
+
+        // Count character frequencies using TryGetValue for cleaner code
+        var charCount = new Dictionary<char, int>();
+        foreach (char c in normalizedWord1)
+        {
+            charCount.TryGetValue(c, out int count);
+            charCount[c] = count + 1;
+        }
+
+        // Decrement counts for characters in second word
+        foreach (char c in normalizedWord2)
+        {
+            if (!charCount.TryGetValue(c, out int count) || count == 0)
+            {
+                return false; // Character not in first word or already used up
+            }
+            charCount[c] = count - 1;
+        }
+
+        return true; // All characters matched perfectly
     }
 
     /// <summary>
@@ -96,11 +153,22 @@ public static class SetsAndMaps
 
         var featureCollection = JsonSerializer.Deserialize<FeatureCollection>(json, options);
 
-        // TODO Problem 5:
-        // 1. Add code in FeatureCollection.cs to describe the JSON using classes and properties 
-        // on those classes so that the call to Deserialize above works properly.
-        // 2. Add code below to create a string out each place a earthquake has happened today and its magitude.
-        // 3. Return an array of these string descriptions.
-        return [];
+        var earthquakeSummaries = new List<string>();
+
+        if (featureCollection?.Features != null)
+        {
+            foreach (var feature in featureCollection.Features)
+            {
+                if (feature.Properties != null &&
+                    !string.IsNullOrEmpty(feature.Properties.Place) &&
+                    feature.Properties.Mag.HasValue)
+                {
+                    string summary = $"{feature.Properties.Place} - Mag {feature.Properties.Mag.Value}";
+                    earthquakeSummaries.Add(summary);
+                }
+            }
+        }
+
+        return earthquakeSummaries.ToArray();
     }
 }
